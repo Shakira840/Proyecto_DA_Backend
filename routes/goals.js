@@ -21,7 +21,7 @@ let goals = [
 ]
 
 router.get('/getGoals', function(req, res, next) {
-    res.json(goals);
+     res.status(200).json(goals);
 })
 
 router.delete('/deleteGoal/:id', function(req, res, next) {
@@ -37,7 +37,7 @@ router.post('/addGoal', function(req, res, next) {
         description: req.body.description
     };
     goals.push(newGoal);
-    res.json({ message: 'Goal added successfully', goal: newGoal });
+     res.status(200).json({ message: 'Goal added successfully', goal: newGoal });
 });
 
 module.exports = router;
