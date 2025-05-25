@@ -1,49 +1,64 @@
 var express = require('express');
-const  route  = require('.');
 var router = express.Router();
+var mysql = require('mysql2');
 
-let goals = [
-    {
-        id: 1,
-        name: 'Goal 1',
-        description: 'Description for Goal 1'
-    },
-    {
-        id: 2,
-        name: 'Goal 2',
-        description: 'Description for Goal 2'
-    },
-    {
-        id: 3,
-        name: 'Goal 3',
-        description: 'Description for Goal 3'
-    }
-]
+var connection = mysql.createConnection({
+  host     : 'localhost',
+  user     : 'root',
+  password : 'Sunny_Day78!',    
+  database : 'proyecto_da'      
+});
+
+connection.connect(function(err) {
+  if (err) {
+    console.error('Error conectando: ' + err.stack);
+    return;
+  }
+  console.log('Conectado con id ' + connection.threadId);
+});
 
 router.get('/getGoals', function(req, res, next) {
-     res.status(200).json(goals);
-})
+  let query = 'SELECT * FROM goals';
+  connection.query(query, function(err, results) {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ error: 'Error al obtener goals' });
+    }
+    res.json(results);
+  });
+});
 
-router.delete('/deleteGoal/:id', function (req, res, next) {
-  const goalId = parseInt(req.params.id);
-  const goal = goals.find(goal => goal.id === goalId);
-
-if (!goal) {
-  return res.status(400).json({ message: 'Goal not found' });
-} else {
-  goals = goals.filter(goal => goal.id !== goalId);
-  return res.status(200).json({ message: 'Goal deleted successfully' });
-}
+router.delete('/removeGoal/:id', function(req, res, next) {
+  const id = req.params.id;
+  if (!id) {
+    return res.status(400).json({ error: 'ID requerido' });
+  }
+  let query = 'DELETE FROM goals WHERE id = ?';
+  connection.query(query, [id], function(err, results) {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ error: 'Error al eliminar goal' });
+    }
+    if (results.affectedRows === 0) {
+      return res.status(404).json({ message: 'Goal no encontrado' });
+    }
+    res.json({ message: 'Goal eliminado correctamente' });
+  });
 });
 
 router.post('/addGoal', function(req, res, next) {
-    const newGoal = {
-        id: goals.length + 1,
-        name: req.body.name,
-        description: req.body.description
-    };
-    goals.push(newGoal);
-     res.status(200).json({ message: 'Goal added successfully', goal: newGoal });
+  const { name, description, dueDate } = req.body;
+  if (!name || !description || !dueDate) {
+    return res.status(400).json({ error: 'Faltan datos obligatorios' });
+  }
+  let query = 'INSERT INTO goals (name, description, dueDate) VALUES (?, ?, ?)';
+  connection.query(query, [name, description, dueDate], function(err, results) {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ error: 'Error al agregar goal' });
+    }
+    res.status(201).json({ message: 'Goal agregado', id: results.insertId });
+  });
 });
 
 module.exports = router;
